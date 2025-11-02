@@ -10,6 +10,9 @@ type Question = {
   options: string[];
   correct_answer_index: number;
   explanation?: string;
+  image_url?: string | null;
+  tryout_id?: string;
+  created_at?: string;
 };
 
 export default function TryoutPage() {
@@ -55,7 +58,7 @@ export default function TryoutPage() {
       // Ambil soal
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
-        .select('id, question_text, options, correct_answer_index, explanation')
+        .select('*')
         .eq('tryout_id', tryoutId)
         .order('created_at', { ascending: true });
 
@@ -161,6 +164,36 @@ export default function TryoutPage() {
     router.push(`/tryout/result?score=${score}&total=${questions.length}&duration=${duration - timeLeft}`);
   };
 
+  // Function to render question text with embedded images
+  const renderQuestionText = (text: string) => {
+    // Split text by image markdown syntax
+    const parts = text.split(/!\[([^\]]*)\]\(([^)]+)\)/g);
+    
+    return parts.map((part, index) => {
+      // Every third item starting from index 2 is an image URL
+      if (index % 3 === 2) {
+        return (
+          <img
+            key={index}
+            src={part}
+            alt={parts[index - 1] || 'Soal'}
+            className="max-w-full h-auto my-3 rounded border"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              console.error('Failed to load image:', part);
+            }}
+          />
+        );
+      }
+      // Every third item starting from index 1 is alt text (skip it)
+      if (index % 3 === 1) {
+        return null;
+      }
+      // Regular text
+      return part ? <span key={index}>{part}</span> : null;
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -202,22 +235,32 @@ export default function TryoutPage() {
 
         {/* Soal */}
         <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <div
-            className="text-lg font-medium mb-4"
-            dangerouslySetInnerHTML={{
-              __html: currentQuestion.question_text.replace(
-                /!\[Soal\]\(([^)]+)\)/g,
-                '<img src="$1" alt="Soal" class="max-w-full h-auto my-3 rounded" />'
-              ),
-            }}
-          />
+          {/* Display separate image_url field if it exists */}
+          {currentQuestion.image_url && (
+            <img
+              src={currentQuestion.image_url}
+              alt="Soal"
+              className="max-w-full h-auto mb-4 rounded border"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                console.error('Failed to load image:', currentQuestion.image_url);
+              }}
+            />
+          )}
+          
+          {/* Question text with embedded images */}
+          <div className="text-lg font-medium mb-4">
+            {renderQuestionText(currentQuestion.question_text)}
+          </div>
+          
+          {/* Options */}
           <div className="space-y-3">
             {currentQuestion.options.map((option, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleAnswerSelect(idx)}
-                className={`w-full text-left p-3 rounded border ${
+                className={`w-full text-left p-3 rounded border transition-colors ${
                   answers[currentQuestionIndex] === idx
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-300 hover:bg-gray-50'
@@ -234,7 +277,7 @@ export default function TryoutPage() {
           <button
             onClick={handlePrev}
             disabled={currentQuestionIndex === 0}
-            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition-colors"
           >
             Sebelumnya
           </button>
@@ -242,14 +285,14 @@ export default function TryoutPage() {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
+              className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 hover:bg-green-700 transition-colors"
             >
               {submitting ? 'Menyimpan...' : 'Selesai'}
             </button>
           ) : (
             <button
               onClick={handleNext}
-              className="px-4 py-2 bg-blue-600 text-white rounded"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Berikutnya
             </button>
