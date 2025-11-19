@@ -37,26 +37,26 @@ export default function LandingPage() {
     }
   ];
 
-  const testimonials = [
-    {
-      name: 'Ahmad Rizki',
-      role: 'Mahasiswa Kedokteran',
-      text: 'Platform ini sangat membantu persiapan UTBK saya. Soal-soalnya berkualitas!',
-      avatar: '👨‍🎓'
-    },
-    {
-      name: 'Siti Nurhaliza',
-      role: 'Guru SMA',
-      text: 'Fitur reasoning dan MCMA sangat cocok untuk latihan soal HOTS siswa.',
-      avatar: '👩‍🏫'
-    },
-    {
-      name: 'Budi Santoso',
-      role: 'Fresh Graduate',
-      text: 'Berkat tryout ini, saya lolos CPNS. Pembahasan soalnya sangat detail!',
-      avatar: '👨‍💼'
-    }
-  ];
+  // const testimonials = [
+  //   {
+  //     name: 'Ahmad Rizki',
+  //     role: 'Mahasiswa Kedokteran',
+  //     text: 'Platform ini sangat membantu persiapan UTBK saya. Soal-soalnya berkualitas!',
+  //     avatar: '👨‍🎓'
+  //   },
+  //   {
+  //     name: 'Siti Nurhaliza',
+  //     role: 'Guru SMA',
+  //     text: 'Fitur reasoning dan MCMA sangat cocok untuk latihan soal HOTS siswa.',
+  //     avatar: '👩‍🏫'
+  //   },
+  //   {
+  //     name: 'Budi Santoso',
+  //     role: 'Fresh Graduate',
+  //     text: 'Berkat tryout ini, saya lolos CPNS. Pembahasan soalnya sangat detail!',
+  //     avatar: '👨‍💼'
+  //   }
+  // ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -205,7 +205,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="bg-white py-20">
+      {/* <section id="testimonials" className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Apa Kata Mereka</h2>
@@ -225,7 +225,7 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-20">
