@@ -16,6 +16,8 @@ type Tryout = {
   title: string;
   total_questions: number;
   duration_minutes: number;
+  start_time: string | null;
+  end_time: string | null;
 };
 
 export default function UserDashboardPage() {
@@ -41,14 +43,18 @@ export default function UserDashboardPage() {
         .single();
 
       if (profileError || !profileData || profileData.role === 'admin') {
-        router.push('/dashboard/admin'); // Redirect admin to admin dashboard
+        router.push('/dashboard/admin');
         return;
       }
 
-      // Fetch tryout list
+      // Fetch tryout list dengan filter waktu
+      const currentTime = new Date().toISOString();
+      
       const { data: tryoutsData, error: tryoutsError } = await supabase
         .from('tryouts')
-        .select('id, title, total_questions, duration_minutes')
+        .select('id, title, total_questions, duration_minutes, start_time, end_time')
+        .or(`start_time.is.null,start_time.lte.${currentTime}`)
+        .or(`end_time.is.null,end_time.gte.${currentTime}`)
         .order('created_at', { ascending: false });
 
       if (tryoutsError) {
@@ -66,6 +72,37 @@ export default function UserDashboardPage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/auth/login');
+  };
+
+  // Helper function untuk format tanggal
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Helper function untuk cek status tryout
+  const getTryoutStatus = (startTime: string | null, endTime: string | null) => {
+    const now = new Date();
+    
+    if (!startTime && !endTime) {
+      return { status: 'available', label: 'Tersedia', color: 'green' };
+    }
+    
+    if (startTime && new Date(startTime) > now) {
+      return { status: 'upcoming', label: 'Akan Datang', color: 'yellow' };
+    }
+    
+    if (endTime && new Date(endTime) < now) {
+      return { status: 'ended', label: 'Berakhir', color: 'red' };
+    }
+    
+    return { status: 'available', label: 'Tersedia', color: 'green' };
   };
 
   if (loading) {
@@ -196,54 +233,92 @@ export default function UserDashboardPage() {
             <div className="bg-white dark:bg-gray-800 p-12 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 text-center">
               <div className="text-6xl mb-4">📭</div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Belum Ada Tryout
+                Tryout dimuai pada tanggal 22 Desember 2025
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                Belum ada tryout yang tersedia saat ini. Silakan cek kembali nanti.
+                Belum ada tryout yang tersedia saat ini. Silakan tunggu.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {tryouts.map((tryout) => (
-                <div 
-                  key={tryout.id} 
-                  className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all group"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {tryout.title}
-                      </h3>
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                          <span>📝</span>
-                          <span>{tryout.total_questions} soal</span>
+              {tryouts.map((tryout) => {
+                const status = getTryoutStatus(tryout.start_time, tryout.end_time);
+                
+                return (
+                  <div 
+                    key={tryout.id} 
+                    className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all group"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {tryout.title}
+                          </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            status.color === 'green' 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : status.color === 'yellow'
+                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {status.label}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                          <span>⏱️</span>
-                          <span>{tryout.duration_minutes} menit</span>
+                        
+                        <div className="flex flex-wrap gap-3 text-sm mb-3">
+                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                            <span>📝</span>
+                            <span>{tryout.total_questions} soal</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                            <span>⏱️</span>
+                            <span>{tryout.duration_minutes} menit</span>
+                          </div>
                         </div>
+                        
+                        {(tryout.start_time || tryout.end_time) && (
+                          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-xs space-y-1">
+                            {tryout.start_time && (
+                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                <span>🕐</span>
+                                <span>Mulai: {formatDateTime(tryout.start_time)}</span>
+                              </div>
+                            )}
+                            {tryout.end_time && (
+                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                <span>🕑</span>
+                                <span>Berakhir: {formatDateTime(tryout.end_time)}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => router.push(`/tryout/${tryout.id}`)}
+                        disabled={status.status !== 'available'}
+                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                          status.status === 'available'
+                            ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {status.status === 'upcoming' ? 'Belum Dimulai' : status.status === 'ended' ? 'Sudah Berakhir' : 'Mulai Tryout'}
+                      </button>
+                      <button
+                        onClick={() => router.push(`/tryout/${tryout.id}/info`)}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        title="Info detail"
+                      >
+                        ℹ️
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => router.push(`/tryout/${tryout.id}`)}
-                      className="flex-1 bg-blue-600 dark:bg-blue-500 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
-                    >
-                      Mulai Tryout
-                    </button>
-                    <button
-                      onClick={() => router.push(`/tryout/${tryout.id}/info`)}
-                      className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      title="Info detail"
-                    >
-                      ℹ️
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

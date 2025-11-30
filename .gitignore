@@ -43,6 +43,10 @@ zig*/
 .DS_Store
 Thumbs.db
 
+# next.js
+/.next/
+/out/
+
 # Coverage
 coverage/
 htmlcov/
