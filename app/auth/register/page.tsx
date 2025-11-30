@@ -120,17 +120,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       {/* Decorative background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 dark:bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-400 dark:bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-indigo-400 dark:bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       <div className="w-full max-w-md relative">
         {/* Main card */}
-        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-white/20">
+        <div className="bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50">
           {/* Header */}
           <div className="text-center mb-8">
             {/* Logo */}
@@ -143,15 +143,15 @@ export default function RegisterPage() {
             </div>
             
             {/* Brand Name */}
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 dark:from-blue-400 dark:to-indigo-400">
               Zona Edukasi
             </h1>
-            <p className="text-gray-600">Buat akun baru Anda</p>
+            <p className="text-gray-600 dark:text-gray-300">Buat akun baru Anda</p>
           </div>
 
           {/* Error message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-3 animate-shake">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 rounded-xl text-sm flex items-start gap-3 animate-shake">
               <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -163,12 +163,12 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="space-y-5">
             {/* Full Name input */}
             <div className="space-y-2">
-              <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Nama Lengkap
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition dark:text-gray-500 dark:group-focus-within:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
@@ -178,7 +178,7 @@ export default function RegisterPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Masukkan nama lengkap"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white dark:bg-gray-700/50 dark:border-gray-600 dark:focus:ring-blue-400 dark:focus:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
@@ -186,12 +186,12 @@ export default function RegisterPage() {
 
             {/* Phone input */}
             <div className="space-y-2">
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Nomor HP
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition dark:text-gray-500 dark:group-focus-within:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -201,7 +201,7 @@ export default function RegisterPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="081234567890"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white dark:bg-gray-700/50 dark:border-gray-600 dark:focus:ring-blue-400 dark:focus:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
@@ -209,12 +209,12 @@ export default function RegisterPage() {
 
             {/* School input */}
             <div className="space-y-2">
-              <label htmlFor="school" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="school" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Asal Sekolah
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition dark:text-gray-500 dark:group-focus-within:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
@@ -224,7 +224,7 @@ export default function RegisterPage() {
                   value={school}
                   onChange={(e) => setSchool(e.target.value)}
                   placeholder="Nama sekolah"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white dark:bg-gray-700/50 dark:border-gray-600 dark:focus:ring-blue-400 dark:focus:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
@@ -232,12 +232,12 @@ export default function RegisterPage() {
 
             {/* Password input */}
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Password
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition dark:text-gray-500 dark:group-focus-within:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -247,14 +247,14 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimal 6 karakter"
-                  className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white"
+                  className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 focus:bg-white dark:bg-gray-700/50 dark:border-gray-600 dark:focus:ring-blue-400 dark:focus:bg-gray-700 dark:text-white"
                   minLength={6}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition dark:text-gray-500 dark:hover:text-gray-300"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,7 +268,7 @@ export default function RegisterPage() {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1 ml-1">Gunakan minimal 6 karakter</p>
+              <p className="text-xs text-gray-500 mt-1 ml-1 dark:text-gray-400">Gunakan minimal 6 karakter</p>
             </div>
 
             {/* Submit button */}
@@ -277,8 +277,8 @@ export default function RegisterPage() {
               disabled={loading}
               className={`w-full py-3 px-4 rounded-xl text-white font-semibold shadow-lg transition-all duration-200 ${
                 loading 
-                  ? 'bg-gradient-to-r from-blue-400 to-indigo-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0'
+                  ? 'bg-gradient-to-r from-blue-400 to-indigo-400 cursor-not-allowed dark:from-blue-600 dark:to-indigo-600' 
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 dark:from-blue-700 dark:to-indigo-700 dark:hover:from-blue-600 dark:hover:to-indigo-600'
               }`}
             >
               {loading ? (
@@ -297,11 +297,11 @@ export default function RegisterPage() {
 
           {/* Login link */}
           <div className="mt-8 text-center">
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-sm dark:text-gray-400">
               Sudah punya akun?{' '}
               <a 
                 href="/auth/login" 
-                className="font-semibold text-blue-600 hover:text-indigo-600 transition"
+                className="font-semibold text-blue-600 hover:text-indigo-600 transition dark:text-blue-400 dark:hover:text-indigo-400"
               >
                 Login
               </a>
@@ -310,7 +310,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer text */}
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-6 dark:text-gray-400">
           Dengan mendaftar, Anda menyetujui syarat dan ketentuan kami
         </p>
       </div>
