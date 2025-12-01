@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import AnswerSelector from './AnswerSelector';
 import TableBuilder from './TableBuilder';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 
 type Tryout = { id: string; title: string };
 
@@ -53,10 +55,47 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [tableRows, setTableRows] = useState<string[][]>([
     ['No Soal', 'Kompetensi', 'Sub Kompetensi', 'Bentuk Soal', 'Kunci'],
     ['', '', '', '', '']
   ]);
+
+  // Tiptap Editor for Question Text
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: form.question_text,
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[150px] p-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white',
+      },
+    },
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      setForm(prev => ({ ...prev, question_text: html }));
+    },
+  });
+
+  // Tiptap Editor for Explanation
+  const explanationEditor = useEditor({
+    extensions: [StarterKit],
+    content: form.explanation,
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[100px] p-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white',
+      },
+    },
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      setForm(prev => ({ ...prev, explanation: html }));
+    },
+  });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (editingQuestion) {
@@ -71,6 +110,10 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         question_type: editingQuestion.question_type,
         reasoning_answers: editingQuestion.reasoning_answers || {},
       });
+      
+      // Update editor content when editing
+      if (editor) editor.commands.setContent(editingQuestion.question_text);
+      if (explanationEditor) explanationEditor.commands.setContent(editingQuestion.explanation);
     } else {
       setForm({
         tryout_id: '',
@@ -83,8 +126,11 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         question_type: 'single',
         reasoning_answers: {},
       });
+      
+      if (editor) editor.commands.setContent('');
+      if (explanationEditor) explanationEditor.commands.setContent('');
     }
-  }, [editingQuestion]);
+  }, [editingQuestion, editor, explanationEditor]);
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...form.options];
@@ -131,7 +177,7 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         imageUrl = publicUrlData.publicUrl;
       }
 
-      let questionText = form.question_text;
+      let questionText = editor ? editor.getHTML() : form.question_text;
       
       if (form.has_table) {
         questionText += generateTableMarkdown();
@@ -149,7 +195,7 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         correct_answers: form.question_type === 'multiple' ? form.correct_answers : null,
         question_type: form.question_type,
         reasoning_answers: form.question_type === 'reasoning' ? form.reasoning_answers : null,
-        explanation: form.explanation,
+        explanation: explanationEditor ? explanationEditor.getHTML() : form.explanation,
       };
 
       if (editingQuestion) {
@@ -176,6 +222,10 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         question_type: 'single',
         reasoning_answers: {},
       });
+      
+      if (editor) editor.commands.setContent('');
+      if (explanationEditor) explanationEditor.commands.setContent('');
+      
       setImageFile(null);
       setTableRows([
         ['No Soal', 'Kompetensi', 'Sub Kompetensi', 'Bentuk Soal', 'Kunci'],
@@ -201,6 +251,42 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
     }
     return true;
   };
+
+  // Toolbar Button Component
+  const ToolbarButton = ({ 
+    onClick, 
+    isActive, 
+    disabled, 
+    children 
+  }: { 
+    onClick: () => void; 
+    isActive?: boolean; 
+    disabled?: boolean; 
+    children: React.ReactNode;
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-3 py-1 rounded transition-colors ${
+        isActive
+          ? 'bg-blue-600 text-white'
+          : 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500'
+      } disabled:opacity-50 disabled:cursor-not-allowed`}
+    >
+      {children}
+    </button>
+  );
+
+  if (!isMounted) {
+    return (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg animate-pulse">
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 transition-colors">
@@ -233,15 +319,94 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         </select>
       </div>
 
+      {/* Rich Text Editor for Question */}
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teks Soal</label>
-        <textarea
-          value={form.question_text}
-          onChange={(e) => setForm({ ...form, question_text: e.target.value })}
-          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          rows={3}
-          required
-        />
+        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+          Teks Soal
+        </label>
+        
+        {editor && (
+          <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex flex-wrap gap-2 p-2 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                isActive={editor.isActive('bold')}
+              >
+                <strong>B</strong>
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                isActive={editor.isActive('italic')}
+              >
+                <em>I</em>
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+                isActive={editor.isActive('strike')}
+              >
+                <s>S</s>
+              </ToolbarButton>
+
+              <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                isActive={editor.isActive('heading', { level: 2 })}
+              >
+                H2
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                isActive={editor.isActive('heading', { level: 3 })}
+              >
+                H3
+              </ToolbarButton>
+
+              <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                isActive={editor.isActive('bulletList')}
+              >
+                • List
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                isActive={editor.isActive('orderedList')}
+              >
+                1. List
+              </ToolbarButton>
+
+              <div className="w-px bg-gray-300 dark:bg-gray-600"></div>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().undo().run()}
+                disabled={!editor.can().undo()}
+              >
+                ↶
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => editor.chain().focus().redo().run()}
+                disabled={!editor.can().redo()}
+              >
+                ↷
+              </ToolbarButton>
+            </div>
+
+            {/* Editor */}
+            <EditorContent editor={editor} />
+          </div>
+        )}
+        
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          💡 Gunakan toolbar untuk format text: <strong>bold</strong>, <em>italic</em>, heading, list, dll.
+        </p>
       </div>
 
       <div className="mb-4">
@@ -313,14 +478,56 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         onReasoningAnswersChange={(answers) => setForm({ ...form, reasoning_answers: answers })}
       />
 
+      {/* Rich Text Editor for Explanation */}
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pembahasan</label>
-        <textarea
-          value={form.explanation}
-          onChange={(e) => setForm({ ...form, explanation: e.target.value })}
-          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          rows={3}
-        />
+        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+          Pembahasan
+        </label>
+        
+        {explanationEditor && (
+          <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex flex-wrap gap-2 p-2 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <ToolbarButton
+                onClick={() => explanationEditor.chain().focus().toggleBold().run()}
+                isActive={explanationEditor.isActive('bold')}
+              >
+                <strong>B</strong>
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => explanationEditor.chain().focus().toggleItalic().run()}
+                isActive={explanationEditor.isActive('italic')}
+              >
+                <em>I</em>
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => explanationEditor.chain().focus().toggleBulletList().run()}
+                isActive={explanationEditor.isActive('bulletList')}
+              >
+                • List
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => explanationEditor.chain().focus().undo().run()}
+                disabled={!explanationEditor.can().undo()}
+              >
+                ↶
+              </ToolbarButton>
+
+              <ToolbarButton
+                onClick={() => explanationEditor.chain().focus().redo().run()}
+                disabled={!explanationEditor.can().redo()}
+              >
+                ↷
+              </ToolbarButton>
+            </div>
+
+            {/* Editor */}
+            <EditorContent editor={explanationEditor} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2">

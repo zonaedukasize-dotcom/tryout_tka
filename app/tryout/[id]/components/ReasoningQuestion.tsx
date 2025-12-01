@@ -44,8 +44,8 @@ export default function ReasoningQuestion({
                   key={idx}
                   className={
                     idx % 2 === 0
-                      ? 'bg-white dark:bg-gray-800'
-                      : 'bg-gray-50 dark:bg-gray-750'
+                      ? 'bg-white dark:bg-gray-900'
+                      : 'bg-gray-50 dark:bg-gray-800'
                   }
                 >
                   <td className="border border-gray-300 dark:border-gray-600 p-3 font-bold text-gray-700 dark:text-gray-300">

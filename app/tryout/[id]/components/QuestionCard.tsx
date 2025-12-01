@@ -5,6 +5,9 @@ import SingleChoiceQuestion from './SingleChoiceQuestion';
 import MultipleChoiceQuestion from './MultipleChoiceQuestion';
 import ReasoningQuestion from './ReasoningQuestion';
 import { supabase } from '@/lib/supabase';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 
 type QuestionCardProps = {
   question: Question;
@@ -35,92 +38,62 @@ export default function QuestionCard({
   };
 
   const renderQuestionText = (text: string) => {
-    const tableRegex = /\n\n(\|[^\n]+\|\n(?:\|[\s:-]+\|[\s\S]*?\n)?(?:\|[^\n]+\|\n)*)/g;
-    const parts = text.split(tableRegex);
-
-    return parts.map((part, partIndex) => {
-      if (part.startsWith('|') && part.includes('\n')) {
-        const rows = part.trim().split('\n').filter(r => r.trim());
-        const tableData = rows.map(row =>
-          row.split('|').map(cell => cell.trim()).filter(cell => cell)
-        );
-
-        const dataRows = tableData.filter(row =>
-          !row.every(cell => /^[\s:-]+$/.test(cell))
-        );
-
-        if (dataRows.length > 0) {
-          const headers = dataRows[0];
-          const bodyRows = dataRows.slice(1);
-
-          return (
-            <div key={partIndex} className="my-4 overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
-                <thead className="bg-gray-100 dark:bg-gray-700">
-                  <tr>
-                    {headers.map((header, idx) => (
-                      <th
-                        key={idx}
-                        className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-medium dark:text-white"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {bodyRows.map((row, rowIdx) => (
-                    <tr
-                      key={rowIdx}
-                      className={
-                        rowIdx % 2 === 0
-                          ? 'bg-white dark:bg-gray-800'
-                          : 'bg-gray-50 dark:bg-gray-750'
-                      }
-                    >
-                      {row.map((cell, cellIdx) => (
-                        <td
-                          key={cellIdx}
-                          className="border border-gray-300 dark:border-gray-600 px-3 py-2 dark:text-gray-200"
-                        >
-                          {cell}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          table: ({node, ...props}) => (
+            <div className="my-4 overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 dark:border-gray-600" {...props} />
             </div>
-          );
-        }
-      }
-
-      const imageParts = part.split(/!\[([^\]]*)\]\(([^)]+)\)/g);
-
-      return imageParts.map((imgPart, index) => {
-        if (index % 3 === 2) {
-          const imageUrl = getImageUrl(imgPart);
-          if (!imageUrl) return null;
-
-          return (
-            <img
-              key={`${partIndex}-${index}`}
-              src={imageUrl}
-              alt={imageParts[index - 1] || 'Soal'}
-              className="max-w-full h-auto my-3 rounded border dark:border-gray-600"
-              crossOrigin="anonymous"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
+          ),
+          thead: ({node, ...props}) => (
+            <thead className="bg-gray-100 dark:bg-gray-700" {...props} />
+          ),
+          th: ({node, ...props}) => (
+            <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left font-medium dark:text-white" {...props} />
+          ),
+          td: ({node, ...props}) => (
+            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 dark:text-gray-200" {...props} />
+          ),
+          tr: ({node, index, ...props}) => (
+            <tr
+              className={
+                index && index % 2 === 0
+                  ? 'bg-white dark:bg-gray-800'
+                  : 'bg-gray-50 dark:bg-gray-750'
+              }
+              {...props}
             />
-          );
-        }
-        if (index % 3 === 1) {
-          return null;
-        }
-        return imgPart ? <span key={`${partIndex}-${index}`}>{imgPart}</span> : null;
-      });
-    });
+          ),
+          img: ({node, src, alt, ...props}) => {
+            const imageUrl = getImageUrl(src || '');
+            if (!imageUrl) return null;
+            return (
+              <img
+                src={imageUrl}
+                alt={alt || 'Soal'}
+                className="max-w-full h-auto my-3 rounded border dark:border-gray-600"
+                crossOrigin="anonymous"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+                {...props}
+              />
+            );
+          },
+          p: ({node, ...props}) => (
+            <p className="text-gray-800 dark:text-gray-200 mb-2" {...props} />
+          ),
+          strong: ({node, ...props}) => (
+            <strong className="font-semibold text-gray-900 dark:text-white" {...props} />
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    );
   };
 
   return (
@@ -137,7 +110,7 @@ export default function QuestionCard({
         />
       )}
 
-      <div className="text-lg font-medium mb-4 text-gray-800 dark:text-white">
+      <div className="text-lg font-medium mb-4">
         {renderQuestionText(question.question_text)}
       </div>
 
