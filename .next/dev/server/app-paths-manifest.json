@@ -1,9 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/dashboard/admin/page": "app/dashboard/admin/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/history/[id]/review/page": "app/history/[id]/review/page.js",
-  "/history/page": "app/history/page.js",
-  "/tryout/[id]/page": "app/tryout/[id]/page.js",
-  "/tryout/result/page": "app/tryout/result/page.js"
-}
