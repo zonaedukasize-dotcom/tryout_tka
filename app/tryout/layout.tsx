@@ -8,12 +8,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html>
-      <body>
+
         <Suspense fallback={<div>Loading...</div>}>
           {children}
         </Suspense>
-      </body>
-    </html>
+
   );
 }
