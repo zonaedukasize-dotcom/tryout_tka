@@ -17,6 +17,10 @@ type Tryout = {
   total_questions: number;
   duration_minutes: number;
   created_at: string;
+  start_time?: string;
+  end_time?: string;
+  price?: number;
+  teacher_id?: string;
 };
 
 type UserProgress = {
@@ -40,73 +44,117 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // Check session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/auth/login');
-        return;
+      try {
+        // Check session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/auth/login');
+          return;
+        }
+
+        // Check if user has teacher role
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, phone, school, role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          router.push('/auth/login');
+          return;
+        }
+
+        if (!profileData || !['admin', 'teacher'].includes(profileData.role || '')) {
+          router.push('/dashboard/user');
+          return;
+        }
+
+        setProfile(profileData);
+
+        // Fetch tryouts created by this teacher only
+        const { data: tryoutsData, error: tryoutsError } = await supabase
+          .from('tryouts')
+          .select('id, title, total_questions, duration_minutes, created_at, start_time, end_time, price, teacher_id')
+          .eq('teacher_id', session.user.id) // Filter by teacher_id
+          .order('created_at', { ascending: false });
+
+        if (tryoutsError) {
+          console.error('Error fetching tryouts:', tryoutsError);
+          console.error('Error details:', JSON.stringify(tryoutsError, null, 2));
+          setTryouts([]);
+          setProgress([]);
+          setLoading(false);
+          return;
+        }
+
+        setTryouts(tryoutsData || []);
+
+        // Fetch user progress for tryouts from same school
+        const tryoutIds = tryoutsData?.map(t => t.id) || [];
+
+        if (tryoutIds.length > 0) {
+          // Step 1: Get all students from same school
+          const { data: studentsData, error: studentsError } = await supabase
+            .from('profiles')
+            .select('id, full_name, school')
+            .eq('school', profileData.school)
+            .neq('role', 'teacher')
+            .neq('role', 'admin');
+
+          if (studentsError) {
+            console.error('Error fetching students:', studentsError);
+            setProgress([]);
+          } else if (studentsData && studentsData.length > 0) {
+            const studentIds = studentsData.map(s => s.id);
+
+            // Step 2: Get results from 'results' table only for students from same school
+            const { data: resultsData, error: resultsError } = await supabase
+              .from('results')
+              .select('id, user_id, tryout_id, score, completed_at, total_questions')
+              .in('tryout_id', tryoutIds)
+              .in('user_id', studentIds)
+              .order('completed_at', { ascending: false })
+              .limit(20);
+
+            if (resultsError) {
+              console.error('Error fetching results:', resultsError);
+              setProgress([]);
+            } else if (resultsData && resultsData.length > 0) {
+              // Step 3: Combine results with user names
+              const combinedProgress: UserProgress[] = resultsData.map(result => {
+                const student = studentsData.find(s => s.id === result.user_id);
+                const tryout = tryoutsData?.find(t => t.id === result.tryout_id);
+                
+                return {
+                  id: result.id,
+                  user_id: result.user_id,
+                  user_name: student?.full_name || 'Unknown Student',
+                  tryout_id: result.tryout_id,
+                  tryout_title: tryout?.title || 'Unknown Tryout',
+                  score: result.score,
+                  completed_at: result.completed_at,
+                  total_questions: result.total_questions || tryout?.total_questions || 0,
+                  answered_questions: 0,
+                };
+              });
+
+              setProgress(combinedProgress);
+            } else {
+              setProgress([]);
+            }
+          } else {
+            setProgress([]);
+          }
+        } else {
+          setProgress([]);
+        }
+
+      } catch (error) {
+        console.error('Unexpected error in fetchDashboardData:', error);
+      } finally {
+        setLoading(false);
       }
-
-      // Check if user has teacher role
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name, phone, school, role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileError || !profileData || !['admin', 'teacher'].includes(profileData.role)) {
-        // Redirect unauthorized users to user dashboard
-        router.push('/dashboard/user');
-        return;
-      }
-
-      // Fetch tryout list created by this teacher
-      const { data: tryoutsData, error: tryoutsError } = await supabase
-        .from('tryouts')
-        .select('id, title, total_questions, duration_minutes, created_at')
-        .order('created_at', { ascending: false });
-
-      if (tryoutsError) {
-        console.error('Error fetching tryouts:', tryoutsError);
-      }
-
-      // Fetch user progress for tryouts created by this teacher
-      const { data: progressData, error: progressError } = await supabase
-        .from('tryout_results')
-        .select(`
-          id,
-          user_id,
-          tryout_id,
-          score,
-          completed_at,
-          profiles:full_name,
-          tryouts:title
-        `)
-        .not('user_id', 'is', null)
-        .order('completed_at', { ascending: false })
-        .limit(20); // Limit to last 20 results
-
-      if (progressError) {
-        console.error('Error fetching progress:', progressError);
-      }
-
-      // Transform progress data to match our type
-      const transformedProgress = progressData?.map(item => ({
-        id: item.id,
-        user_id: item.user_id,
-        user_name: item.profiles?.full_name || 'User',
-        tryout_id: item.tryout_id,
-        tryout_title: item.tryouts?.title || 'Tryout',
-        score: item.score,
-        completed_at: item.completed_at,
-        total_questions: 0, // Will be filled later if needed
-        answered_questions: 0, // Will be filled later if needed
-      })) || [];
-
-      setProfile(profileData);
-      setTryouts(tryoutsData || []);
-      setProgress(transformedProgress);
-      setLoading(false);
     };
 
     fetchDashboardData();
@@ -152,6 +200,14 @@ export default function TeacherDashboardPage() {
             </button>
             
             <button
+              onClick={() => router.push('/admin')}
+              className="flex items-center gap-2 bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors text-sm md:text-base"
+            >
+              <span>📝</span>
+              <span>Kelola Soal</span>
+            </button>
+            
+            <button
               onClick={() => router.push('/history')}
               className="flex items-center gap-2 bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm md:text-base"
             >
@@ -179,7 +235,7 @@ export default function TeacherDashboardPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {profile?.full_name}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-900 dark:text-white">
                 Guru/Pembuat Soal
               </p>
             </div>
@@ -278,7 +334,7 @@ export default function TeacherDashboardPage() {
                     className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700"
                   >
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-medium text-gray-900 dark:text-white">
                           {tryout.title}
                         </h3>
@@ -291,14 +347,29 @@ export default function TeacherDashboardPage() {
                             <span>⏱️</span>
                             <span>{tryout.duration_minutes} menit</span>
                           </div>
+                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                            <span>👥</span>
+                            <span>
+                              {progress.filter(p => p.tryout_id === tryout.id).length} siswa
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => router.push(`/tryout/${tryout.id}/edit`)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex gap-2 ml-2">
+                        <button
+                          onClick={() => router.push(`/tryout/${tryout.id}/results`)}
+                          className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-sm font-medium"
+                          title="Lihat Hasil"
+                        >
+                          📊 Hasil
+                        </button>
+                        <button
+                          onClick={() => router.push(`/tryout/${tryout.id}/edit`)}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
