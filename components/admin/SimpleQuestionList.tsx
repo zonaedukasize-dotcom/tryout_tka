@@ -22,7 +22,7 @@ type SimpleQuestionListProps = {
   onDelete: (questionId: string) => void;
 };
 
-export default function SimpleQuestionList({ questions, onEdit, onDelete }: SimpleQuestionListProps) {
+export function SimpleQuestionList({ questions, onEdit, onDelete }: SimpleQuestionListProps) {
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {

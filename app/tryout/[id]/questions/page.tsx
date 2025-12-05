@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import  SimpleQuestionForm  from '@/components/admin/SimpleQuestionForm';
-import  SimpleQuestionList  from '@/components/admin/SimpleQuestionList';
+import { SimpleQuestionForm } from '@/components/admin/SimpleQuestionForm';
+import { SimpleQuestionList } from '@/components/admin/SimpleQuestionList';
 
 type Tryout = {
   id: string;
@@ -15,7 +15,6 @@ type Tryout = {
 type Question = {
   id: string;
   tryout_id: string;
-  question_number: number;
   question_text: string;
   option_a: string;
   option_b: string;
@@ -82,7 +81,6 @@ export default function TryoutQuestionsPage() {
         .from('questions')
         .select('*')
         .eq('tryout_id', tryoutId)
-        .order('question_number', { ascending: true });
 
       if (questionsError) throw questionsError;
 
@@ -235,21 +233,7 @@ export default function TryoutQuestionsPage() {
             </button>
           </div>
 
-          {showForm ? (
-            <div className="mb-8">
-              <QuestionForm
-                question={editingQuestion || undefined}
-                onSave={handleSaveQuestion}
-                onCancel={handleCancelForm}
-              />
-            </div>
-          ) : null}
-
-          <QuestionList
-            questions={questions}
-            onEdit={handleEditQuestion}
-            onDelete={handleDeleteQuestion}
-          />
+         
         </div>
       </div>
     </div>

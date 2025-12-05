@@ -22,7 +22,7 @@ type SimpleQuestionFormProps = {
   onCancel: () => void;
 };
 
-export default function SimpleQuestionForm({ question, onSave, onCancel }: SimpleQuestionFormProps) {
+export function SimpleQuestionForm({ question, onSave, onCancel }: SimpleQuestionFormProps) {
   const [form, setForm] = useState({
     question_text: '',
     option_a: '',
