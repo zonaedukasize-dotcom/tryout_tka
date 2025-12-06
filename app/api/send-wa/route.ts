@@ -6,7 +6,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { phone, fullName, isNotification, registrationData } = body;
 
-    if (!phone) {
+    let targetPhone = phone;
+    
+    if (isNotification) {
+      // Jika ini notifikasi untuk admin, gunakan nomor dari environment variable
+      const adminPhone = process.env.ADMIN_PHONE;
+      if (!adminPhone) {
+        return NextResponse.json(
+          { error: 'ADMIN_PHONE tidak ditemukan di environment variables' },
+          { status: 500 }
+        );
+      }
+      targetPhone = adminPhone;
+    } else if (!targetPhone) {
+      // Jika bukan notifikasi dan tidak ada nomor yang ditentukan
       return NextResponse.json(
         { error: 'Phone wajib diisi' },
         { status: 400 }
@@ -14,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Pastikan format nomor sesuai (62xxx tanpa +)
-    let formattedPhone = phone.replace(/\D/g, '');
+    let formattedPhone = targetPhone.replace(/\D/g, '');
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '62' + formattedPhone.substring(1);
     } else if (!formattedPhone.startsWith('62')) {

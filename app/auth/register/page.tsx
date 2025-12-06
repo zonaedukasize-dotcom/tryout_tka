@@ -35,7 +35,11 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone, fullName }),
+        body: JSON.stringify({ 
+          phone, 
+          fullName,
+          isNotification: false // Ini bukan notifikasi untuk admin
+        }),
       });
 
       const data = await response.json();
@@ -59,9 +63,7 @@ export default function RegisterPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          phone: process.env.ADMIN_PHONE || '', // Nomor admin dari environment
-          fullName: 'Admin', // Untuk keperluan format pesan
-          isNotification: true,
+          isNotification: true, // Ini menandakan bahwa ini adalah notifikasi untuk admin
           registrationData: { fullName, phone, school }
         }),
       });
