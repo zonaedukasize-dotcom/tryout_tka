@@ -55,7 +55,6 @@ parts/
 sdist/
 develop-eggs/
 .installed.cfg
-lib/
 lib64/
 wheels/
 share/python-wheels/
