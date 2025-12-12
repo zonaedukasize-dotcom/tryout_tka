@@ -17,8 +17,6 @@ type ReviewPageProps = {
 
 export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
   const router = useRouter();
-  const [resultId, setResultId] = useState<string>('');
-  const [tryoutId, setTryoutId] = useState<string>('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [userAnswers, setUserAnswers] = useState<Map<string, UserAnswer>>(new Map());
   const [result, setResult] = useState<any>(null);
@@ -27,31 +25,31 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [error, setError] = useState<string>('');
 
-  // Resolve params
+  // Single useEffect to handle everything
   useEffect(() => {
-    const resolveParams = async () => {
-      const resolvedParams = await params;
-      const resolvedSearchParams = await searchParams;
-      setResultId(resolvedParams.id);
-      setTryoutId(resolvedSearchParams.tryout_id || '');
-    };
-    resolveParams();
-  }, [params, searchParams]);
-
-  // Fetch review data
-  useEffect(() => {
-    if (!resultId || !tryoutId) return;
-
     const fetchReviewData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/auth/login');
-        return;
-      }
-
       try {
-        // Fetch user profile
+        // 1. Resolve params first
+        const resolvedParams = await params;
+        const resolvedSearchParams = await searchParams;
+        const resultId = resolvedParams.id;
+        
+        console.log('Resolved params:', { resultId, searchParams: resolvedSearchParams });
+
+        if (!resultId) {
+          throw new Error('Result ID tidak ditemukan');
+        }
+
+        // 2. Check auth
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/auth/login');
+          return;
+        }
+
+        // 3. Fetch user profile
         const { data: profileData } = await supabase
           .from('profiles')
           .select('full_name, phone')
@@ -60,55 +58,74 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
 
         setUserProfile(profileData);
 
-        // Check payment status
-        const paymentResponse = await fetch(
-          `/api/payment/status?userId=${session.user.id}&tryoutId=${tryoutId}`
-        );
-        const paymentData = await paymentResponse.json();
-        setHasPaid(paymentData.hasPaid || false);
-
-        // Fetch result
+        // 4. Fetch result
         const { data: resultData, error: resultError } = await supabase
           .from('results')
           .select('id, tryout_id, user_id, score, total_questions, duration_seconds, completed_at')
           .eq('id', resultId)
           .single();
 
+        console.log('Result data:', resultData, 'Error:', resultError);
+
         if (resultError || !resultData) {
-          throw new Error('Result not found');
+          throw new Error('Hasil tryout tidak ditemukan');
         }
 
-        // Fetch tryout title
+        // 5. Get tryout_id (from searchParams or result)
+        const tryoutId = resolvedSearchParams.tryout_id || resultData.tryout_id;
+        
+        console.log('Using tryout_id:', tryoutId);
+
+        if (!tryoutId) {
+          throw new Error('Tryout ID tidak ditemukan');
+        }
+
+        // 6. Check payment status
+        const paymentResponse = await fetch(
+          `/api/payment/status?userId=${session.user.id}&tryoutId=${tryoutId}`
+        );
+        const paymentData = await paymentResponse.json();
+        setHasPaid(paymentData.hasPaid || false);
+
+        // 7. Fetch tryout title
         const { data: tryoutData } = await supabase
           .from('tryouts')
           .select('title')
-          .eq('id', resultData.tryout_id)
+          .eq('id', tryoutId)
           .single();
 
         setResult({
           ...resultData,
+          tryout_id: tryoutId, // Store for payment
           tryouts: { title: tryoutData?.title || 'Tryout' }
         });
 
-        // Fetch questions
-        const actualTryoutId = tryoutId || resultData.tryout_id;
+        // 8. Fetch questions
         const { data: questionsData, error: questionsError } = await supabase
           .from('questions')
           .select('*')
-          .eq('tryout_id', actualTryoutId)
+          .eq('tryout_id', tryoutId)
           .order('created_at', { ascending: true });
 
-        if (questionsError || !questionsData?.length) {
-          throw new Error('Questions not found');
+        console.log('Questions:', questionsData?.length, 'Error:', questionsError);
+
+        if (questionsError) {
+          throw new Error('Gagal memuat soal: ' + questionsError.message);
+        }
+
+        if (!questionsData || questionsData.length === 0) {
+          throw new Error('Tidak ada soal ditemukan untuk tryout ini');
         }
 
         setQuestions(questionsData);
 
-        // Fetch user answers
-        const { data: userAnswersData } = await supabase
+        // 9. Fetch user answers
+        const { data: userAnswersData, error: answersError } = await supabase
           .from('user_answers')
           .select('*')
           .eq('result_id', resultId);
+
+        console.log('User answers:', userAnswersData?.length, 'Error:', answersError);
 
         const answersMap = new Map<string, UserAnswer>();
         userAnswersData?.forEach((ans: any) => {
@@ -123,18 +140,24 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
 
         setUserAnswers(answersMap);
         setLoading(false);
-      } catch (error) {
+
+      } catch (error: any) {
         console.error('Error fetching review data:', error);
-        alert('Gagal memuat data review');
-        router.push('/history');
+        setError(error.message || 'Gagal memuat data review');
+        setLoading(false);
+        
+        // Show error for 3 seconds then redirect
+        setTimeout(() => {
+          router.push('/history');
+        }, 3000);
       }
     };
 
     fetchReviewData();
-  }, [resultId, tryoutId, router]);
+  }, [params, searchParams, router]);
 
   const handleUnlockClick = async () => {
-    if (paymentLoading) return;
+    if (paymentLoading || !result) return;
 
     try {
       setPaymentLoading(true);
@@ -143,6 +166,12 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
       if (!session) {
         router.push('/auth/login');
         return;
+      }
+
+      const tryoutId = result.tryout_id;
+
+      if (!tryoutId) {
+        throw new Error('Tryout ID tidak ditemukan');
       }
 
       // Create payment
@@ -163,14 +192,14 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create payment');
+        throw new Error(data.error || 'Gagal membuat pembayaran');
       }
 
       // Redirect to payment page
-      if (data.data.paymentUrl) {
+      if (data.data?.paymentUrl) {
         window.location.href = data.data.paymentUrl;
       } else {
-        throw new Error('Payment URL not found');
+        throw new Error('Payment URL tidak ditemukan');
       }
     } catch (error: any) {
       console.error('Payment error:', error);
@@ -179,12 +208,43 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
     }
   };
 
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+            Terjadi Kesalahan
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500">
+            Mengalihkan ke halaman history...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Memuat review...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No questions state
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="text-6xl mb-4">📝</div>
+          <p className="text-gray-600 dark:text-gray-400">Tidak ada soal untuk ditampilkan</p>
         </div>
       </div>
     );
@@ -240,7 +300,7 @@ export default function ReviewPage({ params, searchParams }: ReviewPageProps) {
               submitting={false}
               onPrev={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
               onNext={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
-              onSubmit={() => {}} // Not needed in review
+              onSubmit={() => {}}
             />
           </div>
 
