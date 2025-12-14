@@ -6,6 +6,8 @@ import Subscript from '@tiptap/extension-subscript';
 import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
+import Mathematics from '@tiptap/extension-mathematics';
+import Image from '@tiptap/extension-image';
 
 export const getEditorExtensions = () => [
   StarterKit.configure({
@@ -35,6 +37,19 @@ export const getEditorExtensions = () => [
   }),
   Superscript,
   Subscript,
+  Mathematics.configure({
+    katexOptions: {
+      throwOnError: false,
+      displayMode: false,
+    },
+  }),
+  Image.configure({
+    inline: true,
+    allowBase64: false,
+    HTMLAttributes: {
+      class: 'max-w-full h-auto rounded-lg my-4',
+    },
+  }),
 ];
 
 export const getEditorProps = (minHeight: string = '150px') => ({
@@ -42,3 +57,4 @@ export const getEditorProps = (minHeight: string = '150px') => ({
     class: `prose dark:prose-invert max-w-none focus:outline-none min-h-[${minHeight}] p-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white`,
   },
 });
+

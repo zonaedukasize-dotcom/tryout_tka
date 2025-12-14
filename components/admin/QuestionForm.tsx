@@ -53,7 +53,6 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
     reasoning_answers: {},
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [tableRows, setTableRows] = useState<string[][]>([
     ['No Soal', 'Kompetensi', 'Sub Kompetensi', 'Bentuk Soal', 'Kunci'],
@@ -90,7 +89,6 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
       question_type: 'single',
       reasoning_answers: {},
     });
-    setImageFile(null);
     setTableRows([
       ['No Soal', 'Kompetensi', 'Sub Kompetensi', 'Bentuk Soal', 'Kunci'],
       ['', '', '', '', '']
@@ -123,12 +121,6 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
     });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-    }
-  };
-
   const generateTableMarkdown = () => {
     let markdown = '\n\n';
     tableRows.forEach((row, idx) => {
@@ -145,31 +137,10 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
     setLoading(true);
 
     try {
-      let imageUrl = '';
-
-      if (imageFile) {
-        const fileName = `${Date.now()}_${imageFile.name}`;
-        const { data, error: uploadError } = await supabase.storage
-          .from('questions')
-          .upload(`images/${fileName}`, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from('questions')
-          .getPublicUrl(data.path);
-
-        imageUrl = publicUrlData.publicUrl;
-      }
-
       let questionText = form.question_text;
       
       if (form.has_table) {
         questionText += generateTableMarkdown();
-      }
-
-      if (imageUrl) {
-        questionText += `\n\n![Soal](${imageUrl.trim()})`;
       }
 
       const dataToSave: any = {
@@ -261,7 +232,8 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
           label="Teks Soal"
           minHeight="150px"
           showAdvancedFormatting={true}
-          helperText="💡 Fitur: bold, italic, x² (pangkat), x₂ (subscript), alignment, lists"
+          allowImageUpload={true}
+          helperText="💡 Fitur: bold, italic, x² (pangkat), x₂ (subscript), alignment, lists, ∑ Math formula, 🖼️ gambar"
         />
       </div>
 
@@ -299,17 +271,6 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
         />
       )}
 
-      {/* Image Upload */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Gambar Soal (Opsional)</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        />
-      </div>
-
       {/* Options Manager */}
       <OptionsManager
         options={form.options}
@@ -336,6 +297,7 @@ export default function QuestionForm({ tryouts, editingQuestion, onSuccess, onCa
           label="Pembahasan"
           minHeight="100px"
           showAdvancedFormatting={false}
+          allowImageUpload={true}
         />
       </div>
 
