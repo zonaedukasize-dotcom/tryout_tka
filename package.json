@@ -24,17 +24,21 @@
     "browser-image-compression": "^2.0.2",
     "katex": "^0.16.27",
     "next": "16.0.7",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-view": "^1.41.4",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "spark-md5": "^3.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/spark-md5": "^3.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "tailwindcss": "^4",

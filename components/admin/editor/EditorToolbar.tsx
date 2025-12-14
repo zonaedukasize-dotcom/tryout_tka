@@ -1,8 +1,9 @@
-// components/admin/editor/EditorToolbar.tsx
+// components/admin/editor/EditorToolbar.tsx (Updated)
 'use client';
 
 import { Editor } from '@tiptap/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { uploadImageWithDedup } from '@/lib/imageUtils';
 
 type ToolbarButtonProps = {
   onClick: () => void;
@@ -33,12 +34,50 @@ const Divider = () => <div className="w-px bg-gray-300 dark:bg-gray-600"></div>;
 type EditorToolbarProps = {
   editor: Editor;
   showAdvancedFormatting?: boolean;
+  allowImageUpload?: boolean;
 };
 
-export default function EditorToolbar({ editor, showAdvancedFormatting = true }: EditorToolbarProps) {
+export default function EditorToolbar({ 
+  editor, 
+  showAdvancedFormatting = true,
+  allowImageUpload = true 
+}: EditorToolbarProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showMathModal, setShowMathModal] = useState(false);
   const [mathLatex, setMathLatex] = useState('');
   const [mathType, setMathType] = useState<'inline' | 'block'>('inline');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      // Upload with deduplication
+      const result = await uploadImageWithDedup(file);
+
+      if (result.isDuplicate) {
+        console.log(`✅ Image reused! Saved ${(result.savedSpace! / 1024).toFixed(2)}KB`);
+        // Optional: Show notification to user
+        // alert(`Gambar sudah ada, menggunakan yang sudah di-upload. Hemat ${(result.savedSpace! / 1024).toFixed(2)}KB!`);
+      }
+
+      // Insert image into editor
+      editor.chain().focus().setImage({ src: result.url }).run();
+
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Gagal upload gambar. Silakan coba lagi.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const insertMath = () => {
     if (!mathLatex.trim()) return;
@@ -185,6 +224,29 @@ export default function EditorToolbar({ editor, showAdvancedFormatting = true }:
         >
           1. List
         </ToolbarButton>
+
+        {/* Image Upload */}
+        {allowImageUpload && (
+          <>
+            <Divider />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              id="image-upload"
+              disabled={isUploading}
+            />
+            <ToolbarButton
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload Gambar (auto-detect duplikat)"
+              disabled={isUploading}
+            >
+              {isUploading ? '⏳' : '🖼️'} Gambar
+            </ToolbarButton>
+          </>
+        )}
 
         <Divider />
 

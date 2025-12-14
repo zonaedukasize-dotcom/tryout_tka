@@ -13,6 +13,7 @@ type RichTextEditorProps = {
   placeholder?: string;
   minHeight?: string;
   showAdvancedFormatting?: boolean;
+  allowImageUpload?: boolean;
   helperText?: string;
 };
 
@@ -23,6 +24,7 @@ export default function RichTextEditor({
   placeholder,
   minHeight = '150px',
   showAdvancedFormatting = true,
+  allowImageUpload = true,
   helperText,
 }: RichTextEditorProps) {
   const [showMathEditModal, setShowMathEditModal] = useState(false);
@@ -39,7 +41,6 @@ export default function RichTextEditor({
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
-      console.log('Editor HTML output:', html); // Debug
       onChange(html);
     },
   });
@@ -56,7 +57,6 @@ export default function RichTextEditor({
         event.preventDefault();
         event.stopPropagation();
 
-        // Get the position in the editor
         const pos = editor.view.posAtDOM(mathNode, 0);
         const node = editor.state.doc.nodeAt(pos);
 
@@ -90,10 +90,8 @@ export default function RichTextEditor({
     const { latex, pos, type } = editingMath;
 
     if (!latex.trim()) {
-      // Delete if empty
       editor.chain().setNodeSelection(pos).deleteSelection().run();
     } else {
-      // Update the math node
       if (type === 'inline') {
         editor.chain().setNodeSelection(pos).updateInlineMath({ latex }).focus().run();
       } else {
@@ -132,7 +130,11 @@ export default function RichTextEditor({
       )}
       
       <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-        <EditorToolbar editor={editor} showAdvancedFormatting={showAdvancedFormatting} />
+        <EditorToolbar 
+          editor={editor} 
+          showAdvancedFormatting={showAdvancedFormatting}
+          allowImageUpload={allowImageUpload}
+        />
         <EditorContent editor={editor} placeholder={placeholder} />
       </div>
 
@@ -172,15 +174,8 @@ export default function RichTextEditor({
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
               <p className="text-xs text-blue-800 dark:text-blue-300 font-medium mb-1">
-                💡 Contoh LaTeX:
+                💡 Double-click math formula untuk edit
               </p>
-              <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                <li><code>\frac{'{a}'}{'{b}'}</code> → Pecahan a/b</li>
-                <li><code>x^2</code> → x pangkat 2</li>
-                <li><code>\sqrt{'{x}'}</code> → Akar kuadrat x</li>
-                <li><code>\sum_{'{i=1}'}^{'{n}'}</code> → Sigma</li>
-                <li><code>\int_{'{a}'}^{'{b}'}</code> → Integral</li>
-              </ul>
             </div>
 
             <div className="flex gap-2">
